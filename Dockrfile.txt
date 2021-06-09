@@ -1,0 +1,9 @@
+FROM gcc:4.9.3
+RUN mkdir /usr/src/doit /usr/src/doit/project
+RUN chmod +x /usr/src/doit
+WORKDIR /usr/src/doit
+COPY ./doit.c .
+COPY ./t .
+RUN gcc -o doit doit.c
+ENTRYPOINT ["./doit"]
+CMD ["./t", "zz", "xx"]
