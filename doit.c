@@ -28,9 +28,11 @@ int main(int argc, char* argv[])
     struct dirent * dire;
     while ((dire = readdir(d)) != NULL) {
         fn = dire -> d_name;
+        
         char *ffn = malloc(strlen(fd) + strlen(fn) + 1);
-        strcpy(ffn, fd);
-        strcat(ffn, fn);
+        snprintf(ffn, sizeof(ffn), "%s\\%s", fd, fn);
+        //strcpy(ffn, fd);
+        //strcat(ffn, fn);
         printf ("%s\n", ffn);
         
         if ((f = fopen(ffn, "rt+")) == NULL) {
