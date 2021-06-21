@@ -4,32 +4,33 @@
 #include <sys/types.h>
 #include <stdlib.h>
 
-#define SIZE 1024
+#define MAX_FILE_STR_SIZE 1024
 
 char* txtToFnd = NULL;
 char* txtToRepls = NULL;
-char sBuff[SIZE];
+char sBuff[MAX_FILE_STR_SIZE];
+char* ptrBuff = sBuff;
 
 void findandrepl(FILE*, FILE*, char*);
-void findandrepleq(FILE* ptrFile);
+void findandrepleq(FILE*);
 
 int main(int argc, char* argv[]) {
-
     DIR* ptrDir = NULL;
     struct dirent* dirEnt = NULL;
     FILE* ptrFile = NULL;
     FILE* ptrFileTmp = NULL;
-    char fName[SIZE];//char* ffName = malloc(strlen(dir) + strlen(fName) + 2);
+    char fName[MAX_FILE_STR_SIZE];//char* ffName = malloc(strlen(dir) + strlen(fName) + 2);
     unsigned short fType;
     char* dir = NULL;
 
     //debug
     char a1[] = ".\\fd";
     char a2[] = "zz";
-    char a3[] = "xx";
+    char a3[] = "x";
     dir = a1;
     txtToFnd = a2;
     txtToRepls = a3;
+    argc = 4;
 
     if ((argc != 4)) {
         perror("invalid number of args"); 
@@ -48,20 +49,17 @@ int main(int argc, char* argv[]) {
         perror(dir);
         return 1;
     }
-
-    //strcat(dir, "\\");
   
     while ((dirEnt = readdir(ptrDir)) != NULL) {
+        char* name = dirEnt -> d_name;
 
-        if ((fType = dirEnt -> d_type) == 16) 
+        if (strcmp(name, ".") == 0 || strcmp(name, "..") == 0) 
             continue;
         
-        snprintf(fName, sizeof(fName), "%s\\%s", dir, dirEnt -> d_name);
-        //strcpy(fName, dir);
-        //strcat(fName, dirEnt -> d_name);
+        snprintf(fName, sizeof(fName), "%s\\%s", dir, name);
         
         if (strlen(txtToFnd) == strlen(txtToRepls)) {
-            if ((ptrFile = fopen(fName, "r+")) == NULL) {
+            if ((ptrFile = fopen(fName, "rb+")) == NULL) {
                 perror(fName); 
                 continue;
             }
@@ -81,58 +79,65 @@ int main(int argc, char* argv[]) {
             fclose(ptrFileTmp);
         }
     }
-
     closedir (ptrDir);
     return 0;                   
 }
 
-void findandrepl(FILE* ptrFileTmp, FILE* ptrFile, char* fName) {
 
-    char * strn;
+void findandrepl(FILE* ptrFileTmp, FILE* ptrFile, char* fName) {
+    char * strn = NULL;
     size_t num;
-    
+    char sBuff2[MAX_FILE_STR_SIZE];
+    char* ptrBuff2 = sBuff2;
     while(!feof (ptrFile)) {
-        if ((fgets(sBuff, sizeof(sBuff), ptrFile)) != NULL) {
-            if ((strn = strstr(sBuff, txtToFnd)) != NULL) {
-                printf("find %d \n", strn - sBuff - 1);
-                printf("suffics %s \n", strn + strlen(txtToFnd));
-                char * prefstr = strtok(sBuff, txtToFnd);
-                printf("preffics %s \n", prefstr);
-                //printf("%s\n", strncat("", sBuff, strn - sBuff - 1));
-                fprintf(ptrFileTmp, "%s%s%s", prefstr, txtToRepls, strn + strlen(txtToFnd));
-                //fputs(strn, ptrFileTmp);
-                //printf("p - %d", ftell(f));
-                //fseek(f, strlen(sBuff), 1);
-                //fseek(f, strn - sBuff - 1, 1);
-                //fputc("V");
-                //fseek(f, strlen(strn), 1);
-            } else fprintf(ptrFileTmp, sBuff);
+        if ((fgets(ptrBuff, sizeof(sBuff), ptrFile)) != NULL) {
+            strcpy(sBuff2, "");
+            char * preffix = strtok(ptrBuff, txtToFnd);
+            while (preffix != NULL) {
+                if (strstr(ptrBuff, txtToFnd) != NULL) {
+                    strcat(sBuff2, txtToRepls);
+                    strcpy(ptrBuff, "");
+                }
+                strcat(sBuff2, preffix);
+                char t = preffix[strlen(preffix)-1];
+                if ((strcmp(preffix,"\n") != 0) && (t != '\n'))
+                    strcat(sBuff2, txtToRepls);
+                preffix = strtok (NULL, txtToFnd);
+            }
+            fprintf(ptrFileTmp, "%s", ptrBuff2);
+            //if ((strn = strstr(ptrBuff, txtToFnd)) != NULL) {
+            //    //int d = strn - ptrBuff - 1;
+            //    char* suffix = strn + strlen(txtToFnd);
+            //    fprintf(ptrFileTmp, "%s%s%s", preffix, txtToRepls, suffix);
+            //} else fprintf(ptrFileTmp, ptrBuff);
         }
     }
 
     freopen("tmp", "r", ptrFileTmp);
-    freopen(fName, "w", ptrFile);
+    //freopen(fName, "w", ptrFile);
 
-    while((num = fread(sBuff, sizeof(char), SIZE, ptrFileTmp)) > 0) {
-        fwrite(sBuff, sizeof(char), num, ptrFile);
-    }
+    //while((num = fread(ptrBuff, sizeof(char), MAX_FILE_STR_SIZE, ptrFileTmp)) > 0) {
+    //    fwrite(ptrBuff, sizeof(char), num, ptrFile);
+    //}
 }
 
 void findandrepleq(FILE* ptrFile) {
-
-    char * strn;
+    char * strn = NULL;
 
     while(!feof (ptrFile)) {
-        if ((fgets(sBuff, sizeof(sBuff), ptrFile)) != NULL) {
-            strn = strstr(sBuff, txtToFnd);
-            if (strn != NULL) {
-                fseek(ptrFile, strlen(sBuff), 1);
-                fseek(ptrFile, strn - sBuff - 1, 1);
-                fputs(txtToRepls, ptrFile);
-                fseek(ptrFile, strlen(strn), 1);
+        long p = ftell(ptrFile);
+        long pos = ftell(ptrFile);
+        if ((fgets(ptrBuff, sizeof(sBuff), ptrFile)) != NULL) {
+            p = ftell(ptrFile);
+            if ((strn = strstr(ptrBuff, txtToFnd)) != NULL) {
+                fseek(ptrFile, - strlen(strn), 1);
+                p = ftell(ptrFile);
+                fwrite(txtToRepls, sizeof(char), strlen(txtToRepls), ptrFile);
+                p = ftell(ptrFile);
+                fseek(ptrFile, -(ftell(ptrFile) - pos), 1);
+                p = ftell(ptrFile);
+                p = ftell(ptrFile);
             }
         }
     }
-    //fseek(ptrFile, n - txtToRepls - 1, 0);
-    //fwrite(txtToRepls, sizeof(txtToRepls), 1, ptrFile);
 }
