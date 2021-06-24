@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <dirent.h>
-//#include <sys/types.h>
 #include <stdlib.h>
 
 #define MAX_FILE_STR_SIZE 1024 //1Kb
@@ -26,22 +25,26 @@ int main(int argc, char *argv[])
     FILE *ptrFileTmp = NULL;
     char *name = NULL;
     char *dir = NULL;
-    char *fName = NULL;
+    char fName[_MAX_FNAME] = {0};
 
     //debug
-    char a1[] = ".\\fd";
-    char a2[] = "x";
-    char a3[] = "zz";
-    dir = a1;
-    txtToFnd = a2;
-    txtToRepls = a3;
-    argc = 4;
+    //char a1[] = ".\\fd";
+    //char a2[] = "z";
+    //char a3[] = "xx";
+    //dir = a1;
+    //txtToFnd = a2;
+    //txtToRepls = a3;
+    //argc = 4;
 
     if ((argc != 4)) 
     {
         perror("invalid number of args");
         return 1;
     }
+
+    dir = argv[1];
+    txtToFnd = argv[2];
+    txtToRepls = argv[3];
 
     if (strcmp(txtToFnd, txtToRepls) == 0) 
     {
@@ -65,10 +68,6 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    //dir = argv[1];
-    //txtToFnd = argv[2];
-    //txtToRepls = argv[3];
-
     if ((ptrDir = opendir(dir)) == NULL) 
     {
         perror(dir);
@@ -82,8 +81,7 @@ int main(int argc, char *argv[])
         if (strcmp(name, ".") == 0 || strcmp(name, "..") == 0)
             continue;
 
-        fName = (char *)malloc(strlen(dir) + strlen(name) + 2);
-        snprintf(fName, strlen(fName), "%s\\%s", dir, name);
+        snprintf(fName, strlen(dir) + strlen(name) + 2, "%s\\%s", dir, name);
 
         if (strlen(txtToFnd) == strlen(txtToRepls))
         {
@@ -111,7 +109,6 @@ int main(int argc, char *argv[])
             fclose(ptrFile);
             fclose(ptrFileTmp);
         }
-        free(fName);
     }
     closedir(ptrDir);
     return 0;
@@ -132,8 +129,6 @@ void findAndRepl(FILE *ptrFileTmp, FILE *ptrFile, char *fName)
 
         if (file_size >= MAX_FILE_SIZE)
         {
-            fclose(ptrFile);
-            fclose(ptrFileTmp);
             perror("Too large file");
             exit(1);
         }
@@ -143,26 +138,26 @@ void findAndRepl(FILE *ptrFileTmp, FILE *ptrFile, char *fName)
 
         if ((fbuffer == NULL) || (fbuffer2 == NULL))
         {
-            fclose(ptrFile);
-            fclose(ptrFileTmp);
             perror("Error allocating bytes - less memory.\n");
             exit(1);
         }
 
         fread(fbuffer, 1, file_size, ptrFile);
-        //rewind(ptrFile);
+        
 
         //what better
         findAndReplInStr(fbuffer, fbuffer2);
         //what better
-        if ((fgets(ptrBuff, sizeof(sBuff), ptrFile)) != NULL)
-        {
-            findAndReplInStr(ptrBuff, ptrBuff2);
-            strcat(fbuffer, ptrBuff);
-        }
+        //rewind(ptrFile);
+        //if ((fgets(ptrBuff, sizeof(sBuff), ptrFile)) != NULL)
+        //{
+        //    findAndReplInStr(ptrBuff, ptrBuff2);
+        //    strcat(fbuffer, ptrBuff);
+        //}
 
         fwrite(fbuffer, strlen(fbuffer), 1, ptrFileTmp);
         free(fbuffer);
+        free(fbuffer2);
     }
 
     freopen("tmp", "r", ptrFileTmp);
